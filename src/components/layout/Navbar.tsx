@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useAuth, SignInButton, SignUpButton, UserButton } from '@clerk/nextjs';
-import { Mic } from 'lucide-react';
+import { Mic, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -11,7 +11,7 @@ interface NavbarProps {
 }
 
 export function Navbar({ variant = 'landing' }: NavbarProps) {
-  const { userId } = useAuth();
+  const { userId, isLoaded } = useAuth();
 
   const isLanding = variant === 'landing';
 
@@ -80,7 +80,15 @@ export function Navbar({ variant = 'landing' }: NavbarProps) {
 
         {/* Actions */}
         <div className="flex items-center gap-4">
-          {userId ? (
+          {!isLoaded ? (
+            // Show placeholder buttons while loading (prevents layout shift)
+            <>
+              <Button variant="ghost" disabled>
+                Sign In
+              </Button>
+              <Button disabled>Get Started</Button>
+            </>
+          ) : userId ? (
             <>
               {isLanding ? (
                 <Link href="/dashboard">
