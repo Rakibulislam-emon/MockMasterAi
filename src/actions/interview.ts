@@ -293,7 +293,8 @@ export async function getInterviewHistory(options: {
     )
       .sort({ createdAt: -1 })
       .skip(options.skip || 0)
-      .limit(options.limit || 20);
+      .limit(options.limit || 20)
+      .lean();
 
     const formattedSessions = sessions.map(s => ({
       id: s._id.toString(),
@@ -310,6 +311,31 @@ export async function getInterviewHistory(options: {
   } catch (error) {
     console.error('Error fetching history:', error);
     return { success: false, error: 'Failed to fetch history' };
+  }
+}
+
+/**
+ * Delete all interview history for the current user
+ */
+export async function deleteAllInterviews(): Promise<ApiResponse<null>> {
+  try {
+    const { userId } = await auth();
+
+    if (!userId) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    await connectDB();
+
+    await InterviewSession.deleteMany({ clerkId: userId });
+
+    revalidatePath('/dashboard');
+    revalidatePath('/history');
+
+    return { success: true, data: null };
+  } catch (error) {
+    console.error('Error deleting history:', error);
+    return { success: false, error: 'Failed to delete history' };
   }
 }
 
