@@ -91,6 +91,22 @@ export default function InterviewRoomPage({ params }: { params: Promise<{ sessio
       setInput(transcript);
     },
     onError: error => {
+      // Handle transient errors gracefully
+      if (
+        error.includes('Network') ||
+        error.includes('no-speech') ||
+        error.includes('not-allowed')
+      ) {
+        toast({
+          title: error.includes('Network') ? 'Connection Issue' : 'Voice Input Unavailable',
+          description: error.includes('Network')
+            ? 'Speech services unreachable. Please type your answer.'
+            : 'Please check microphone permissions or type your answer.',
+          variant: 'default',
+        });
+        return;
+      }
+
       toast({
         title: 'Speech Error',
         description: `Could not recognize speech: ${error}`,

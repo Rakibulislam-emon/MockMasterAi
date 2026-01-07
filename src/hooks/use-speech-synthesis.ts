@@ -142,6 +142,12 @@ export function useSpeechSynthesis(options: {
       };
 
       utterance.onerror = event => {
+        // Ignore "not-allowed" or "interrupted" errors
+        if (event.error === 'not-allowed' || event.error === 'interrupted') {
+          setState(prev => ({ ...prev, isSpeaking: false }));
+          return;
+        }
+
         console.error('Speech synthesis error:', event.error);
         setState(prev => ({ ...prev, isSpeaking: false }));
         onErrorRef.current?.(event.error);

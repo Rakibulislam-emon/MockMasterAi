@@ -144,7 +144,30 @@ export function useSpeechRecognition(options: {
       };
 
       recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-        const errorMessage = event.error;
+        const error = event.error;
+
+        // Ignore "aborted" error as it usually happens when stopping manually
+        if (error === 'aborted') {
+          setState(prev => ({
+            ...prev,
+            isListening: false,
+            error: null,
+          }));
+          return;
+        }
+
+        // Map error codes to user-friendly messages
+        let errorMessage = `Error: ${error}`;
+        if (error === 'network') {
+          errorMessage = 'Network connection issue. Please check your internet.';
+        } else if (error === 'not-allowed') {
+          errorMessage = 'Microphone access denied. Please allow permissions.';
+        } else if (error === 'no-speech') {
+          errorMessage = 'No speech detected. Please try again.';
+        } else if (error === 'audio-capture') {
+          errorMessage = 'No microphone found or audio capture failed.';
+        }
+
         setState(prev => ({
           ...prev,
           isListening: false,
@@ -177,18 +200,28 @@ export function useSpeechRecognition(options: {
     if (recognition && !state.isListening) {
       try {
         recognition.start();
-      } catch (error) {
-        console.error('Error starting speech recognition:', error);
+      } catch (error: any) {
+        // If it's an InvalidStateError, it means it's already started, which is fine.
+        if (error.name === 'InvalidStateError' || error.message?.includes('already started')) {
+          // Sync state to match reality
+          setState(prev => ({ ...prev, isListening: true }));
+        } else {
+          console.error('Error starting speech recognition:', error);
+        }
       }
     }
   }, [state.isListening]);
 
   const stopListening = useCallback(() => {
     const recognition = recognitionRef.current;
-    if (recognition && state.isListening) {
-      recognition.stop();
+    if (recognition) {
+      try {
+        recognition.stop();
+      } catch (error) {
+        console.error('Error stopping speech recognition:', error);
+      }
     }
-  }, [state.isListening]);
+  }, []);
 
   const resetTranscript = useCallback(() => {
     setState(prev => ({
