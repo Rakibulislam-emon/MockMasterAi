@@ -282,11 +282,18 @@ export async function getInterviewHistory(options: {
 
     await connectDB();
 
-    const sessions = await InterviewSession.findByClerkId(userId, {
-      limit: options.limit || 20,
-      skip: options.skip || 0,
-      status: options.status,
-    });
+    const query: Record<string, unknown> = { clerkId: userId };
+    if (options.status) {
+      query.status = options.status;
+    }
+
+    const sessions = await InterviewSession.find(
+      query,
+      'sessionType status targetRole startedAt completedAt duration feedback'
+    )
+      .sort({ createdAt: -1 })
+      .skip(options.skip || 0)
+      .limit(options.limit || 20);
 
     const formattedSessions = sessions.map(s => ({
       id: s._id.toString(),

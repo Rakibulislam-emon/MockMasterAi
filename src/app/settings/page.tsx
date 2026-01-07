@@ -183,7 +183,7 @@ export default function SettingsPage() {
                     Receive updates and tips via email
                   </p>
                 </div>
-                <input type="checkbox" className="h-5 w-5" defaultChecked />
+                <input type="checkbox" className="h-5 w-5"  />
               </div>
 
               <div className="flex items-center justify-between">

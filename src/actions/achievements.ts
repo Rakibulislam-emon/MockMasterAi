@@ -30,10 +30,13 @@ export async function getUserAchievements(): Promise<ApiResponse<Achievement[]>>
     await connectDB();
 
     // Get all completed sessions for the user
-    const sessions = await InterviewSession.find({
-      clerkId: userId,
-      status: 'completed',
-    }).sort({ completedAt: -1 });
+    const sessions = await InterviewSession.find(
+      {
+        clerkId: userId,
+        status: 'completed',
+      },
+      'completedAt feedback.overallScore'
+    ).sort({ completedAt: -1 });
 
     const totalInterviews = sessions.length;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

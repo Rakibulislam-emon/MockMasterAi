@@ -260,10 +260,13 @@ export async function getUserStats(): Promise<
     await connectDB();
 
     // Get stats from completed sessions
-    const sessions = await InterviewSession.find({
-      clerkId: userId,
-      status: 'completed',
-    });
+    const sessions = await InterviewSession.find(
+      {
+        clerkId: userId,
+        status: 'completed',
+      },
+      'questionsCompleted duration feedback.overallScore'
+    );
 
     const totalInterviews = sessions.length;
     const totalQuestions = sessions.reduce(
