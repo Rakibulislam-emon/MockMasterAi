@@ -1,12 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
 import { Mic } from 'lucide-react';
 
 export function Footer() {
-  const t = useTranslations('Common');
-
   return (
     <footer className="border-t py-12">
       <div className="container mx-auto px-4">
@@ -18,17 +15,17 @@ export function Footer() {
             <span className="text-xl font-bold">InterPrep AI</span>
           </div>
 
-          <p className="text-sm text-muted-foreground">{t('allRightsReserved')}</p>
+          <p className="text-sm text-muted-foreground">© 2024 InterPrep AI. All rights reserved.</p>
 
           <div className="flex items-center gap-6">
             <Link href="/privacy" className="text-sm text-muted-foreground hover:text-foreground">
-              {t('privacyPolicy')}
+              Privacy Policy
             </Link>
             <Link href="/terms" className="text-sm text-muted-foreground hover:text-foreground">
-              {t('termsOfService')}
+              Terms of Service
             </Link>
             <Link href="/contact" className="text-sm text-muted-foreground hover:text-foreground">
-              {t('contact')}
+              Contact
             </Link>
           </div>
         </div>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Settings, Bell, Globe, Target } from 'lucide-react';
+import { Settings, Bell, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -24,24 +24,13 @@ const experienceLevels: { value: ExperienceLevel; label: string }[] = [
   { value: 'executive', label: 'Executive (10+ years)' },
 ];
 
-const languages = [
-  { value: 'en', label: 'English' },
-  { value: 'bn', label: 'বাংলা (Bengali)' },
-  { value: 'both', label: 'Both (Mixed)' },
-];
-
-const interfaceLanguages = [
-  { value: 'en', label: 'English' },
-  { value: 'bn', label: 'বাংলা' },
-];
-
 export default function SettingsPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [preferences, setPreferences] = useState({
-    preferredLanguage: 'en' as 'en' | 'bn' | 'both',
+    preferredLanguage: 'en' as const,
     targetRole: '',
     experienceLevel: null as ExperienceLevel | null,
     timezone: 'Asia/Dhaka',
@@ -56,7 +45,7 @@ export default function SettingsPage() {
       const result = await getUserPreferences();
       if (result.success && result.data) {
         setPreferences({
-          preferredLanguage: result.data.preferredLanguage,
+          preferredLanguage: 'en',
           targetRole: result.data.targetRole,
           experienceLevel: result.data.experienceLevel ?? null,
           timezone: result.data.timezone,
@@ -172,61 +161,6 @@ export default function SettingsPage() {
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-
-            <div>
-              <Label htmlFor="preferredLanguage">Interview Language</Label>
-              <Select
-                value={preferences.preferredLanguage}
-                onValueChange={value =>
-                  setPreferences({
-                    ...preferences,
-                    preferredLanguage: value as 'en' | 'bn' | 'both',
-                  })
-                }
-              >
-                <SelectTrigger id="preferredLanguage" className="mt-2">
-                  <SelectValue placeholder="Select language" />
-                </SelectTrigger>
-                <SelectContent>
-                  {languages.map(lang => (
-                    <SelectItem key={lang.value} value={lang.value}>
-                      {lang.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="mt-1 text-sm text-muted-foreground">
-                This will be the primary language for your interview practice
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Interface Preferences */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Globe className="h-5 w-5" />
-              Interface Preferences
-            </CardTitle>
-            <CardDescription>Customize the app interface to your liking</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div>
-              <Label htmlFor="interfaceLanguage">Interface Language</Label>
-              <Select defaultValue="en">
-                <SelectTrigger id="interfaceLanguage" className="mt-2 w-48">
-                  <SelectValue placeholder="Select language" />
-                </SelectTrigger>
-                <SelectContent>
-                  {interfaceLanguages.map(lang => (
-                    <SelectItem key={lang.value} value={lang.value}>
-                      {lang.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
           </CardContent>
         </Card>

@@ -34,19 +34,12 @@ const difficulties = [
   { id: 'adaptive', label: 'Adaptive - Adjusts to your level' },
 ];
 
-const languages = [
-  { id: 'en', label: 'English' },
-  { id: 'bn', label: 'Bengali (বাংলা)' },
-  { id: 'mixed', label: 'Mixed (Bilingual)' },
-];
-
 export default function PracticePage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [config, setConfig] = useState({
     sessionType: 'behavioral',
     difficulty: 'medium',
-    language: 'en',
     targetRole: 'software-engineer',
   });
 
@@ -57,7 +50,7 @@ export default function PracticePage() {
       const result = await createInterviewSession({
         sessionType: config.sessionType as 'behavioral' | 'technical' | 'general' | 'mock',
         difficultyLevel: config.difficulty as 'easy' | 'medium' | 'hard' | 'adaptive',
-        languageMode: config.language as 'en' | 'bn' | 'mixed',
+        languageMode: 'en',
         targetRole: config.targetRole,
         targetCompany: '',
       });
@@ -128,7 +121,7 @@ export default function PracticePage() {
         </div>
 
         {/* Configuration Options */}
-        <div className="mb-8 grid gap-6 md:grid-cols-3">
+        <div className="mb-8 grid gap-6 md:grid-cols-2">
           <div>
             <Label htmlFor="difficulty">Difficulty Level</Label>
             <Select
@@ -142,25 +135,6 @@ export default function PracticePage() {
                 {difficulties.map(diff => (
                   <SelectItem key={diff.id} value={diff.id}>
                     {diff.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label htmlFor="language">Interview Language</Label>
-            <Select
-              value={config.language}
-              onValueChange={value => setConfig({ ...config, language: value })}
-            >
-              <SelectTrigger id="language" className="mt-2">
-                <SelectValue placeholder="Select language" />
-              </SelectTrigger>
-              <SelectContent>
-                {languages.map(lang => (
-                  <SelectItem key={lang.id} value={lang.id}>
-                    {lang.label}
                   </SelectItem>
                 ))}
               </SelectContent>

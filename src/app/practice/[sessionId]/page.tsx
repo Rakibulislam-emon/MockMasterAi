@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { Mic, Send, VolumeX, Loader2, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -27,13 +27,14 @@ export default function InterviewRoomPage({ params }: { params: Promise<{ sessio
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isEnding, setIsEnding] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  const { sessionId } = require('react').use(params);
+  const { sessionId } = use(params);
 
   // Load session data
-  require('react').useEffect(() => {
+  useEffect(() => {
     const loadSession = async () => {
       try {
         const result = await getInterviewSession(sessionId);
@@ -101,20 +102,21 @@ export default function InterviewRoomPage({ params }: { params: Promise<{ sessio
   });
 
   // Auto-speak the last AI message when messages load initially
-  require('react').useEffect(() => {
-    if (!isLoading && messages.length > 0) {
+  const [hasSpokenInitial, setHasSpokenInitial] = useState(false);
+
+  useEffect(() => {
+    if (!isLoading && messages.length > 0 && !hasSpokenInitial) {
       const lastMessage = messages[messages.length - 1];
       if (lastMessage.role === 'ai') {
-        // Small timeout to ensure audio context is ready/user interaction (browser policy might block)
-        // Note: Chrome requires user interaction first.
-        // We might need a "Start" button overlay if autoplay is blocked,
-        // but let's try calling it.
-        // ttsActions.speak(lastMessage.content);
-        // Commented out for now to avoid auto-play policy issues until user interaction is confirmed.
-        // For "AI Initiation", seeing the question is the primary goal.
+        // Small delay to ensure audio context is ready after user interaction
+        const timer = setTimeout(() => {
+          ttsActions.speak(lastMessage.content);
+          setHasSpokenInitial(true);
+        }, 500);
+        return () => clearTimeout(timer);
       }
     }
-  }, [isLoading, messages, ttsActions]);
+  }, [isLoading, messages, ttsActions, hasSpokenInitial]);
 
   const handleSendMessage = useCallback(async () => {
     if (!input.trim() || isProcessing) return;
@@ -163,7 +165,10 @@ export default function InterviewRoomPage({ params }: { params: Promise<{ sessio
   }, [input, isProcessing, sessionId, ttsActions, toast]);
 
   const handleEndInterview = useCallback(async () => {
-    setIsProcessing(true);
+    setIsEnding(true);
+
+    // Stop any ongoing speech to prevent interruption errors
+    ttsActions.stop();
 
     try {
       const result = await completeInterviewSession(sessionId);
@@ -180,6 +185,7 @@ export default function InterviewRoomPage({ params }: { params: Promise<{ sessio
           description: result.error || 'Failed to complete interview',
           variant: 'destructive',
         });
+        setIsEnding(false);
       }
     } catch (error) {
       console.error('Error ending interview:', error);
@@ -188,10 +194,9 @@ export default function InterviewRoomPage({ params }: { params: Promise<{ sessio
         description: 'Something went wrong. Please try again.',
         variant: 'destructive',
       });
-    } finally {
-      setIsProcessing(false);
+      setIsEnding(false);
     }
-  }, [sessionId, router, toast]);
+  }, [sessionId, router, toast, ttsActions]);
 
   const handleVoiceInput = () => {
     if (speechState.isListening) {
@@ -221,8 +226,19 @@ export default function InterviewRoomPage({ params }: { params: Promise<{ sessio
           </div>
         </div>
 
-        <Button variant="destructive" onClick={handleEndInterview} disabled={isProcessing}>
-          End Interview
+        <Button
+          variant="destructive"
+          onClick={handleEndInterview}
+          disabled={isEnding || isProcessing}
+        >
+          {isEnding ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Ending...
+            </>
+          ) : (
+            'End Interview'
+          )}
         </Button>
       </header>
 
@@ -254,7 +270,7 @@ export default function InterviewRoomPage({ params }: { params: Promise<{ sessio
             ))
           )}
 
-          {isProcessing && (
+          {isProcessing && !isEnding && (
             <div className="chat-message ai">
               <div className="flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />

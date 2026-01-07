@@ -1,23 +1,19 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
-
 export function HowItWorks() {
-  const t = useTranslations('HowItWorks');
-
   const steps = [
-    { step: '1', title: t('step1Title'), desc: t('step1Desc') },
-    { step: '2', title: t('step2Title'), desc: t('step2Desc') },
-    { step: '3', title: t('step3Title'), desc: t('step3Desc') },
-    { step: '4', title: t('step4Title'), desc: t('step4Desc') },
+    { step: '1', title: 'Create Account', desc: 'Sign up for free in seconds' },
+    { step: '2', title: 'Upload Resume', desc: 'Let AI analyze your profile' },
+    { step: '3', title: 'Practice', desc: 'Interview with our AI' },
+    { step: '4', title: 'Improve', desc: 'Get feedback and track progress' },
   ];
 
   return (
     <section id="how-it-works" className="bg-muted/30 py-24">
       <div className="container mx-auto px-4">
         <div className="mb-16 text-center">
-          <h2 className="mb-4 text-3xl font-bold md:text-4xl">{t('title')}</h2>
-          <p className="text-lg text-muted-foreground">{t('subtitle')}</p>
+          <h2 className="mb-4 text-3xl font-bold md:text-4xl">How It Works</h2>
+          <p className="text-lg text-muted-foreground">Get started in just a few simple steps</p>
         </div>
 
         <div className="grid gap-8 md:grid-cols-4">

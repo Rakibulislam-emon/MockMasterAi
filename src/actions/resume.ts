@@ -10,29 +10,29 @@ import type { ApiResponse } from '@/types';
 /**
  * Upload and analyze a resume
  */
-export async function uploadResume(
-  file: {
-    name: string;
-    size: number;
-    type: string;
-    content: string;
-  }
-): Promise<ApiResponse<{
-  resumeId: string;
-  analysis: {
-    overallScore: number;
-    atsScore: number;
-    missingKeywords: string[];
-    improvementSuggestions: Array<{
-      section: string;
-      suggestion: string;
-      importance: string;
-    }>;
-  };
-}>> {
+export async function uploadResume(file: {
+  name: string;
+  size: number;
+  type: string;
+  content: string;
+}): Promise<
+  ApiResponse<{
+    resumeId: string;
+    analysis: {
+      overallScore: number;
+      atsScore: number;
+      missingKeywords: string[];
+      improvementSuggestions: Array<{
+        section: string;
+        suggestion: string;
+        importance: string;
+      }>;
+    };
+  }>
+> {
   try {
     const { userId } = await auth();
-    
+
     if (!userId) {
       return { success: false, error: 'Unauthorized' };
     }
@@ -94,20 +94,24 @@ export async function uploadResume(
 /**
  * Get all user resumes
  */
-export async function getUserResumes(): Promise<ApiResponse<Array<{
-  id: string;
-  fileName: string;
-  createdAt: Date;
-  analyzedAt: Date | null;
-  isDefault: boolean;
-  analysis: {
-    overallScore: number | null;
-    atsScore: number | null;
-  } | null;
-}>>> {
+export async function getUserResumes(): Promise<
+  ApiResponse<
+    Array<{
+      id: string;
+      fileName: string;
+      createdAt: Date;
+      analyzedAt: Date | null;
+      isDefault: boolean;
+      analysis: {
+        overallScore: number | null;
+        atsScore: number | null;
+      } | null;
+    }>
+  >
+> {
   try {
     const { userId } = await auth();
-    
+
     if (!userId) {
       return { success: false, error: 'Unauthorized' };
     }
@@ -116,7 +120,7 @@ export async function getUserResumes(): Promise<ApiResponse<Array<{
 
     const resumes = await Resume.findByClerkId(userId);
 
-    const formattedResumes = resumes.map((r) => ({
+    const formattedResumes = resumes.map(r => ({
       id: r._id.toString(),
       fileName: r.fileName,
       createdAt: r.createdAt,
@@ -140,12 +144,10 @@ export async function getUserResumes(): Promise<ApiResponse<Array<{
 /**
  * Delete a resume
  */
-export async function deleteResume(
-  resumeId: string
-): Promise<ApiResponse<null>> {
+export async function deleteResume(resumeId: string): Promise<ApiResponse<null>> {
   try {
     const { userId } = await auth();
-    
+
     if (!userId) {
       return { success: false, error: 'Unauthorized' };
     }
@@ -153,7 +155,7 @@ export async function deleteResume(
     await connectDB();
 
     const deleted = await Resume.deleteById(resumeId, userId);
-    
+
     if (!deleted) {
       return { success: false, error: 'Resume not found' };
     }
@@ -170,12 +172,10 @@ export async function deleteResume(
 /**
  * Set a resume as default
  */
-export async function setDefaultResume(
-  resumeId: string
-): Promise<ApiResponse<null>> {
+export async function setDefaultResume(resumeId: string): Promise<ApiResponse<null>> {
   try {
     const { userId } = await auth();
-    
+
     if (!userId) {
       return { success: false, error: 'Unauthorized' };
     }
@@ -196,17 +196,17 @@ export async function setDefaultResume(
 /**
  * Get resume details including parsed content
  */
-export async function getResumeDetails(
-  resumeId: string
-): Promise<ApiResponse<{
-  fileName: string;
-  extractedText: string;
-  parsedSections: Record<string, unknown>;
-  analysis: Record<string, unknown> | null;
-}>> {
+export async function getResumeDetails(resumeId: string): Promise<
+  ApiResponse<{
+    fileName: string;
+    extractedText: string;
+    parsedSections: Record<string, unknown>;
+    analysis: Record<string, unknown> | null;
+  }>
+> {
   try {
     const { userId } = await auth();
-    
+
     if (!userId) {
       return { success: false, error: 'Unauthorized' };
     }
@@ -238,9 +238,7 @@ export async function getResumeDetails(
 }
 
 // Helper function to analyze resume content
-async function analyzeResumeContent(
-  resumeText: string
-): Promise<{
+async function analyzeResumeContent(resumeText: string): Promise<{
   overallScore: number;
   atsScore: number;
   missingKeywords: string[];
@@ -274,12 +272,22 @@ async function analyzeResumeContent(
       maxTokens: 512,
     });
 
-    // Parse the response
-    const cleanedResult = result.replace(/```json\n?|\n?```/g, '').trim();
+    // Parse the response - handle various formats
+    let cleanedResult = result.trim();
+
+    // Remove markdown code fences if present
+    cleanedResult = cleanedResult.replace(/```json\s*/gi, '').replace(/```\s*/g, '');
+
+    // Try to find JSON object in the response
+    const jsonMatch = cleanedResult.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      cleanedResult = jsonMatch[0];
+    }
+
     return JSON.parse(cleanedResult);
   } catch (error) {
     console.error('Error analyzing resume:', error);
-    
+
     // Return default analysis on error
     return {
       overallScore: 70,

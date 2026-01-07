@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
 import { useAuth, SignInButton, SignUpButton, UserButton } from '@clerk/nextjs';
 import { Mic } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -12,7 +11,6 @@ interface NavbarProps {
 }
 
 export function Navbar({ variant = 'landing' }: NavbarProps) {
-  const t = useTranslations('Navigation');
   const { userId } = useAuth();
 
   const isLanding = variant === 'landing';
@@ -63,19 +61,19 @@ export function Navbar({ variant = 'landing' }: NavbarProps) {
               href="#features"
               className="text-muted-foreground transition-colors hover:text-foreground"
             >
-              {t('features')}
+              Features
             </Link>
             <Link
               href="#how-it-works"
               className="text-muted-foreground transition-colors hover:text-foreground"
             >
-              {t('howItWorks')}
+              How It Works
             </Link>
             <Link
               href="#testimonials"
               className="text-muted-foreground transition-colors hover:text-foreground"
             >
-              {t('testimonials')}
+              Testimonials
             </Link>
           </div>
         )}
@@ -86,7 +84,7 @@ export function Navbar({ variant = 'landing' }: NavbarProps) {
             <>
               {isLanding ? (
                 <Link href="/dashboard">
-                  <Button>{t('dashboard')}</Button>
+                  <Button>Go to Dashboard</Button>
                 </Link>
               ) : (
                 <UserButton afterSignOutUrl="/" />
@@ -95,10 +93,10 @@ export function Navbar({ variant = 'landing' }: NavbarProps) {
           ) : (
             <>
               <SignInButton mode="modal">
-                <Button variant="ghost">{t('signIn')}</Button>
+                <Button variant="ghost">Sign In</Button>
               </SignInButton>
               <SignUpButton mode="modal">
-                <Button>{t('getStarted')}</Button>
+                <Button>Get Started</Button>
               </SignUpButton>
             </>
           )}

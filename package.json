@@ -47,7 +47,6 @@
     "lucide-react": "^0.460.0",
     "mongoose": "^8.8.0",
     "next": "^15.0.3",
-    "next-intl": "^3.25.0",
     "pdf-parse": "^1.1.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
