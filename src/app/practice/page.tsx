@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Mic, FileText, Clock, Users, Sparkles, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { createInterviewSession } from '@/actions/interview';
+import { getUserPreferences } from '@/actions/user';
 
 const sessionTypes = [
   {
@@ -42,6 +43,24 @@ export default function PracticePage() {
     difficulty: 'medium',
     targetRole: 'software-engineer',
   });
+
+  // Load user preferences from settings
+  useEffect(() => {
+    const loadPreferences = async () => {
+      try {
+        const result = await getUserPreferences();
+        if (result.success && result.data?.targetRole) {
+          setConfig(prev => ({
+            ...prev,
+            targetRole: result.data!.targetRole || prev.targetRole,
+          }));
+        }
+      } catch (error) {
+        console.error('Error loading preferences:', error);
+      }
+    };
+    loadPreferences();
+  }, []);
 
   const handleStartInterview = async () => {
     setIsLoading(true);
