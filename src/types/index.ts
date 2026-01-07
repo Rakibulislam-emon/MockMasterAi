@@ -6,7 +6,7 @@ export interface User {
   clerkId: string;
   email: string;
   name: string | null;
-  preferredLanguage: 'en' | 'bn' | 'both';
+  preferredLanguage: 'en';
   targetRole: string | null;
   targetIndustry: string | null;
   experienceLevel: ExperienceLevel | null;
@@ -22,7 +22,7 @@ export type ExperienceLevel = 'entry' | 'mid' | 'senior' | 'executive';
 export type SessionType = 'behavioral' | 'technical' | 'general' | 'mock';
 export type SessionStatus = 'in_progress' | 'completed' | 'aborted';
 export type DifficultyLevel = 'easy' | 'medium' | 'hard' | 'adaptive';
-export type LanguageMode = 'en' | 'bn' | 'mixed';
+export type LanguageMode = 'en';
 
 export interface Message {
   id: string;
@@ -216,7 +216,7 @@ export interface SessionConfigForm {
 }
 
 export interface UserPreferencesForm {
-  preferredLanguage: 'en' | 'bn' | 'both';
+  preferredLanguage: 'en';
   targetRole: string;
   experienceLevel?: ExperienceLevel | null;
   timezone: string;
@@ -247,49 +247,49 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     name: 'First Steps',
     description: 'Complete your first interview',
     icon: '🎯',
-    criteria: (stats) => stats.totalInterviews >= 1,
+    criteria: stats => stats.totalInterviews >= 1,
   },
   {
     id: 'five_interviews',
     name: 'Getting Started',
     description: 'Complete 5 interviews',
     icon: '📝',
-    criteria: (stats) => stats.totalInterviews >= 5,
+    criteria: stats => stats.totalInterviews >= 5,
   },
   {
     id: 'twenty_interviews',
     name: 'Dedicated',
     description: 'Complete 20 interviews',
     icon: '💪',
-    criteria: (stats) => stats.totalInterviews >= 20,
+    criteria: stats => stats.totalInterviews >= 20,
   },
   {
     id: 'streak_week',
     name: 'Week Warrior',
     description: 'Maintain a 7-day streak',
     icon: '🔥',
-    criteria: (stats) => stats.currentStreak >= 7,
+    criteria: stats => stats.currentStreak >= 7,
   },
   {
     id: 'streak_month',
     name: 'Monthly Master',
     description: 'Maintain a 30-day streak',
     icon: '⚡',
-    criteria: (stats) => stats.currentStreak >= 30,
+    criteria: stats => stats.currentStreak >= 30,
   },
   {
     id: 'high_score',
     name: 'Excellence',
     description: 'Score above 80 in an interview',
     icon: '⭐',
-    criteria: (stats) => stats.averageScore >= 80,
+    criteria: stats => stats.averageScore >= 80,
   },
   {
     id: 'perfect_score',
     name: 'Perfectionist',
     description: 'Score above 90 in an interview',
     icon: '🏆',
-    criteria: (stats) => stats.averageScore >= 90,
+    criteria: stats => stats.averageScore >= 90,
   },
 ];
 

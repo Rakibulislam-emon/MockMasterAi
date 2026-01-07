@@ -99,7 +99,6 @@ export async function updateUserPreferences(
         },
         $setOnInsert: {
           createdAt: new Date(),
-          preferredLanguage: updates.preferredLanguage || 'en',
         },
       },
       {
