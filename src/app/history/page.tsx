@@ -27,9 +27,9 @@ export default async function HistoryPage() {
             </div>
             <span className="text-xl font-bold">InterPrep AI</span>
           </div>
-          <Button variant="ghost" onClick={() => redirect('/dashboard')}>
-            Back to Dashboard
-          </Button>
+          <Link href="/dashboard">
+            <Button variant="ghost">Back to Dashboard</Button>
+          </Link>
         </div>
       </header>
 

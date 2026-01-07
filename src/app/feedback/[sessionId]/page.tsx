@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, CheckCircle, Award, BarChart2, BookOpen, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,7 @@ export default function FeedbackPage({ params }: { params: Promise<{ sessionId: 
   const [isLoading, setIsLoading] = useState(true);
 
   // Unwrap params using React.use
-  const { sessionId } = require('react').use(params);
+  const { sessionId } = use(params);
 
   useEffect(() => {
     const fetchSession = async () => {
@@ -54,7 +54,7 @@ export default function FeedbackPage({ params }: { params: Promise<{ sessionId: 
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
           <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-          <p className="text-muted-foreground">Loading feedback...</p>
+          <p className="text-muted-foreground">Analyzing your interview performance...</p>
         </div>
       </div>
     );

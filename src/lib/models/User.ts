@@ -5,7 +5,7 @@ export interface IUser extends Document {
   clerkId: string;
   email: string;
   name: string | null;
-  preferredLanguage: 'en' | 'bn' | 'both';
+  preferredLanguage: 'en';
   targetRole: string | null;
   targetIndustry: string | null;
   experienceLevel: 'entry' | 'mid' | 'senior' | 'executive' | null;
@@ -42,7 +42,7 @@ const UserSchema = new Schema<IUser>(
     },
     preferredLanguage: {
       type: String,
-      enum: ['en', 'bn', 'both'],
+      enum: ['en'],
       default: 'en',
     },
     targetRole: {
@@ -101,7 +101,7 @@ UserSchema.statics.findOrCreate = async function (
   name: string | null
 ): Promise<IUser> {
   let user = await this.findOne({ clerkId });
-  
+
   if (!user) {
     user = await this.create({
       clerkId,
@@ -113,14 +113,12 @@ UserSchema.statics.findOrCreate = async function (
     user.lastLoginAt = new Date();
     await user.save();
   }
-  
+
   return user;
 };
 
 // Find user by Clerk ID
-UserSchema.statics.findByClerkId = async function (
-  clerkId: string
-): Promise<IUser | null> {
+UserSchema.statics.findByClerkId = async function (clerkId: string): Promise<IUser | null> {
   return this.findOne({ clerkId });
 };
 
@@ -129,11 +127,7 @@ UserSchema.statics.updatePreferences = async function (
   clerkId: string,
   updates: Partial<IUser>
 ): Promise<IUser | null> {
-  return this.findOneAndUpdate(
-    { clerkId },
-    { $set: updates },
-    { new: true }
-  );
+  return this.findOneAndUpdate({ clerkId }, { $set: updates }, { new: true });
 };
 
 const User: IUserModel =

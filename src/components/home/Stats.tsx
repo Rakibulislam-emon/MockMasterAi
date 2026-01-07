@@ -1,15 +1,11 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
-
 export function Stats() {
-  const t = useTranslations('Stats');
-
   const stats = [
-    { value: '10K+', label: t('interviews') },
-    { value: '95%', label: t('satisfaction') },
-    { value: '50+', label: t('roles') },
-    { value: '24/7', label: t('availability') },
+    { value: '10K+', label: 'Interviews Practiced' },
+    { value: '95%', label: 'User Satisfaction' },
+    { value: '50+', label: 'Job Roles Supported' },
+    { value: '24/7', label: 'AI Availability' },
   ];
 
   return (

@@ -282,11 +282,18 @@ export async function getInterviewHistory(options: {
 
     await connectDB();
 
-    const sessions = await InterviewSession.findByClerkId(userId, {
-      limit: options.limit || 20,
-      skip: options.skip || 0,
-      status: options.status,
-    });
+    const query: Record<string, unknown> = { clerkId: userId };
+    if (options.status) {
+      query.status = options.status;
+    }
+
+    const sessions = await InterviewSession.find(
+      query,
+      'sessionType status targetRole startedAt completedAt duration feedback'
+    )
+      .sort({ createdAt: -1 })
+      .skip(options.skip || 0)
+      .limit(options.limit || 20);
 
     const formattedSessions = sessions.map(s => ({
       id: s._id.toString(),
@@ -374,30 +381,33 @@ export async function getUserStats(): Promise<
 // Helper functions (simplified implementations)
 
 function generateInitialQuestion(sessionType: string, targetRole: string): string {
-  const questions: Record<string, string[]> = {
+  // Clean up the target role for display
+  const displayRole = targetRole.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+  const introductions: Record<string, string[]> = {
     behavioral: [
-      'Tell me about a challenging project you worked on.',
-      'Describe a situation where you had to work with a difficult team member.',
-      'Tell me about a time you failed and what you learned from it.',
+      `Hello! Thank you for joining me today. I'm excited to learn more about you and your experiences. This will be a behavioral interview where we'll discuss how you've handled various situations in the past. Let's start with something to help me understand your background - tell me about a challenging project you worked on.`,
+      `Hi there! Welcome to your interview. I'm here to understand more about how you approach problems and work with others. Let's begin - can you describe a situation where you had to work with a difficult team member?`,
+      `Hello and welcome! Thank you for taking the time to speak with me today. In this session, we'll explore your past experiences and how you've navigated different challenges. To start, tell me about a time you failed and what you learned from it.`,
     ],
     technical: [
-      `What are the key principles of ${targetRole}?`,
-      `Describe your experience with relevant technologies for ${targetRole} positions.`,
-      `How do you stay updated with the latest developments in ${targetRole}?`,
+      `Hello! Welcome to your technical interview for the ${displayRole} position. I'll be asking you some questions to understand your technical knowledge and problem-solving abilities. Let's start by having you explain the key principles and technologies you're most experienced with in this field.`,
+      `Hi, great to meet you! Today we'll dive into the technical aspects of the ${displayRole} role. I'd like to start by understanding your technical background - can you describe your experience with the core technologies relevant to this position?`,
+      `Hello and welcome! I'm looking forward to our technical discussion today. As we explore your qualifications for the ${displayRole} role, let's begin - how do you stay updated with the latest developments in your field?`,
     ],
     general: [
-      'Why are you interested in this position?',
-      'What are your strengths and weaknesses?',
-      'Where do you see yourself in five years?',
+      `Hello! Thank you for coming in today. This is a general interview where I'd like to get to know you better and understand what drives you professionally. Let's start with a common but important question - why are you interested in this position?`,
+      `Hi there! Welcome to your interview. I'm excited to learn more about you and your career aspirations. To begin, tell me about yourself - what are your main strengths and areas where you're still growing?`,
+      `Hello and welcome! Thanks for joining me today. We'll have a friendly conversation about your goals and fit for this role. Where do you see yourself in five years?`,
     ],
     mock: [
-      `Let's start with a brief introduction about yourself and your background in ${targetRole}.`,
-      'Walk me through your resume and highlight your most relevant experiences.',
+      `Hello! Welcome to your mock interview for the ${displayRole} position. I'll be conducting this session just like a real interview, so feel free to treat it as the real thing. Let's start with a classic opener - please give me a brief introduction about yourself and your background.`,
+      `Hi there! Thank you for joining this mock interview session. I'm your interviewer today, and I'll be simulating a realistic interview experience for the ${displayRole} role. Let's begin - can you walk me through your resume and highlight your most relevant experiences?`,
     ],
   };
 
-  const typeQuestions = questions[sessionType] || questions.general;
-  return typeQuestions[Math.floor(Math.random() * typeQuestions.length)];
+  const typeIntros = introductions[sessionType] || introductions.general;
+  return typeIntros[Math.floor(Math.random() * typeIntros.length)];
 }
 
 async function generateAIResponse(
@@ -428,23 +438,50 @@ async function generateFeedback(
   targetRole: string | null
 ): Promise<IFeedback> {
   try {
+    // Filter out system messages and count actual exchanges
+    const userMessages = messages.filter(m => m.role === 'user');
+    const messageCount = userMessages.length;
+
     const prompt = `
-      Analyze this interview session for a ${targetRole || 'general'} role.
-      Messages: ${JSON.stringify(messages)}
+      You are a strict, professional interview evaluator. Analyze this interview session for a ${targetRole || 'general'} role.
       
-      Provide feedback in JSON format:
+      IMPORTANT SCORING GUIDELINES - BE STRICT:
+      - 90-100: Exceptional - Only for candidates who gave detailed, specific examples with clear context, actions, and results (STAR method). Answers must be comprehensive and demonstrate deep expertise.
+      - 70-89: Good - Candidate gave solid answers with some specific examples. Showed competence but may have lacked depth in some areas.
+      - 50-69: Average - Candidate gave acceptable answers but were too brief, generic, or lacked specific examples. Needs improvement.
+      - 30-49: Below Average - Answers were vague, irrelevant, too short, or showed lack of preparation. Did not properly address questions.
+      - 0-29: Poor - Candidate gave one-word answers, off-topic responses, or inappropriate replies. Did not engage properly with the interview.
+      
+      EVALUATION CRITERIA:
+      1. Content Quality (contentScore): Did they provide specific examples? Were answers relevant to the question? Did they use the STAR method where appropriate?
+      2. Communication Style (confidenceScore): Were answers well-structured? Did they speak professionally? Was there clarity in expression?
+      3. Language Proficiency (languageScore): Grammar, vocabulary, articulation. Were sentences complete and professional?
+      
+      Red flags that should SIGNIFICANTLY lower scores:
+      - One-word or very short answers (e.g., "yes", "no", "okay", "good")
+      - Generic answers without specific examples
+      - Not answering the actual question asked
+      - Unprofessional language or tone
+      - Lack of detail or context
+      
+      Interview Messages: ${JSON.stringify(messages)}
+      Number of user responses: ${messageCount}
+      
+      If the user gave very few responses or very short answers, scores should be LOW (under 40).
+      
+      Provide HONEST, STRICT feedback in JSON format:
       {
-        "overallScore": number (0-100),
+        "overallScore": number (0-100, be strict!),
         "contentScore": number (0-100),
         "languageScore": number (0-100),
         "confidenceScore": number (0-100),
-        "strengths": ["list of 3 strengths"],
+        "strengths": ["list up to 3 genuine strengths, or fewer if none evident"],
         "improvements": [
           {
             "category": "category name",
-            "description": "what to improve",
-            "suggestedResponse": "example better response",
-            "explanation": "why this is better"
+            "description": "specific issue observed",
+            "suggestedResponse": "example of a better response",
+            "explanation": "why this would be better"
           }
         ],
         "suggestedResources": [
@@ -455,20 +492,42 @@ async function generateFeedback(
           }
         ]
       }
+      
+      Be honest and constructive. Do not inflate scores to make the candidate feel good - they need accurate feedback to improve.
     `;
 
     const result = await aiGateway.generateContent(prompt, { preferFast: false });
-    const cleanedResult = result.replace(/```json\n?|\n?```/g, '').trim();
-    return JSON.parse(cleanedResult);
+
+    // Try to extract JSON from the response - handle various formats
+    let cleanedResult = result.trim();
+
+    // Remove markdown code fences if present
+    cleanedResult = cleanedResult.replace(/```json\s*/gi, '').replace(/```\s*/g, '');
+
+    // Try to find JSON object in the response
+    const jsonMatch = cleanedResult.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      cleanedResult = jsonMatch[0];
+    }
+
+    const parsed = JSON.parse(cleanedResult);
+    return parsed;
   } catch (error) {
     console.error('Feedback generation failed:', error);
     return {
-      overallScore: 70,
-      contentScore: 70,
-      languageScore: 70,
-      confidenceScore: 70,
-      strengths: ['Communication', 'Honesty', 'Clarity'],
-      improvements: [],
+      overallScore: 30,
+      contentScore: 30,
+      languageScore: 30,
+      confidenceScore: 30,
+      strengths: ['Attempted the interview'],
+      improvements: [
+        {
+          category: 'Response Quality',
+          description: 'Focus on providing detailed, specific answers with examples',
+          suggestedResponse: 'Use the STAR method: Situation, Task, Action, Result',
+          explanation: 'Interviewers want to see concrete evidence of your skills and experience',
+        },
+      ],
       suggestedResources: [],
     };
   }
