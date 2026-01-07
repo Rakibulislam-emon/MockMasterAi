@@ -2,7 +2,6 @@ import { redirect } from 'next/navigation';
 import { auth } from '@clerk/nextjs/server';
 import { getInterviewHistory } from '@/actions/interview';
 import { HistoryClient } from './history-client';
-
 export default async function HistoryPage() {
   const { userId } = await auth();
 

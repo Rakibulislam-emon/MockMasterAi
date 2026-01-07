@@ -1,8 +1,19 @@
 'use client';
 
-import { useState, useCallback, useEffect, use } from 'react';
+import { useState, useCallback, useEffect, use, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Mic, Send, VolumeX, Loader2, MessageSquare } from 'lucide-react';
+import {
+  Mic,
+  Send,
+  VolumeX,
+  Loader2,
+  MessageSquare,
+  Sparkles,
+  StopCircle,
+  ArrowLeft,
+  Brain,
+  Volume2,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
@@ -14,6 +25,7 @@ import {
   completeInterviewSession,
   getInterviewSession,
 } from '@/actions/interview';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface Message {
   role: 'user' | 'ai' | 'system';
@@ -30,6 +42,7 @@ export default function InterviewRoomPage({ params }: { params: Promise<{ sessio
   const [isEnding, setIsEnding] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { sessionId } = use(params);
 
@@ -39,24 +52,11 @@ export default function InterviewRoomPage({ params }: { params: Promise<{ sessio
       try {
         const result = await getInterviewSession(sessionId);
         if (result.success && result.data) {
-          // Convert string timestamps back to Date objects if needed,
-          // though JSON.parse(JSON.stringify()) usually leaves them as strings.
-          // We map them to ensure correct type.
           const formattedMessages = result.data.messages.map((m: any) => ({
             ...m,
             timestamp: new Date(m.timestamp),
           }));
           setMessages(formattedMessages);
-
-          // If the last message is from AI, speak it automatically to start conversation
-          const lastMessage = formattedMessages[formattedMessages.length - 1];
-          if (lastMessage && lastMessage.role === 'ai') {
-            // We can't immediately speak here because init might not be ready,
-            // but we can try or set a flag.
-            // Simplest is to just let user read it, or use a separate effect.
-            // For "AI Initiation", simply showing the message is often enough,
-            // but speaking it adds the "live" feel.
-          }
         } else {
           toast({
             title: 'Error',
@@ -78,6 +78,11 @@ export default function InterviewRoomPage({ params }: { params: Promise<{ sessio
 
     loadSession();
   }, [sessionId, toast]);
+
+  // Scroll to bottom on new messages
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isProcessing]);
 
   // Speech recognition
   const [speechState, speechActions] = useSpeechRecognition({
@@ -108,7 +113,6 @@ export default function InterviewRoomPage({ params }: { params: Promise<{ sessio
     if (!isLoading && messages.length > 0 && !hasSpokenInitial) {
       const lastMessage = messages[messages.length - 1];
       if (lastMessage.role === 'ai') {
-        // Small delay to ensure audio context is ready after user interaction
         const timer = setTimeout(() => {
           ttsActions.speak(lastMessage.content);
           setHasSpokenInitial(true);
@@ -142,8 +146,6 @@ export default function InterviewRoomPage({ params }: { params: Promise<{ sessio
         };
 
         setMessages(prev => [...prev, aiMessage]);
-
-        // Speak the AI response
         ttsActions.speak(aiMessage.content);
       } else {
         toast({
@@ -166,8 +168,6 @@ export default function InterviewRoomPage({ params }: { params: Promise<{ sessio
 
   const handleEndInterview = useCallback(async () => {
     setIsEnding(true);
-
-    // Stop any ongoing speech to prevent interruption errors
     ttsActions.stop();
 
     try {
@@ -213,21 +213,43 @@ export default function InterviewRoomPage({ params }: { params: Promise<{ sessio
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-screen flex-col bg-background text-foreground transition-colors duration-500">
+      {/* Background Gradient */}
+      <div className="fixed inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-900/20 via-background to-background" />
+
       {/* Header */}
-      <header className="flex items-center justify-between border-b p-4">
+      <header className="sticky top-0 z-50 flex items-center justify-between border-b border-white/10 bg-background/60 p-4 backdrop-blur-xl">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={() => router.back()}>
-            Back
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex items-center gap-2 hover:bg-white/5"
+            onClick={() => router.back()}
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span className="hidden sm:inline">Back</span>
           </Button>
-          <div>
-            <h1 className="font-semibold">Interview in Progress</h1>
-            <p className="text-sm text-muted-foreground">Practice Session</p>
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 shadow-md">
+              <Sparkles className="h-4 w-4 text-white" />
+            </div>
+            <div>
+              <h1 className="text-sm font-semibold sm:text-base">Interview in Progress</h1>
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500"></span>
+                </span>
+                <p className="text-xs text-muted-foreground">Live Session</p>
+              </div>
+            </div>
           </div>
         </div>
 
         <Button
           variant="destructive"
+          size="sm"
+          className="bg-red-500/10 text-red-500 shadow-none hover:bg-red-500/20 hover:text-red-400"
           onClick={handleEndInterview}
           disabled={isEnding || isProcessing}
         >
@@ -237,7 +259,10 @@ export default function InterviewRoomPage({ params }: { params: Promise<{ sessio
               Ending...
             </>
           ) : (
-            'End Interview'
+            <>
+              <StopCircle className="mr-2 h-4 w-4" />
+              End Interview
+            </>
           )}
         </Button>
       </header>
@@ -245,118 +270,225 @@ export default function InterviewRoomPage({ params }: { params: Promise<{ sessio
       {/* Main Content */}
       <div className="flex flex-1 overflow-hidden">
         {/* Messages Area */}
-        <div className="flex-1 space-y-4 overflow-y-auto p-4">
-          {messages.length === 0 ? (
-            <div className="flex h-full items-center justify-center text-center text-muted-foreground">
-              <div>
-                <MessageSquare className="mx-auto mb-4 h-12 w-12 opacity-50" />
-                <p>Your interview will begin shortly.</p>
-                <p className="text-sm">The AI interviewer will ask you questions.</p>
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6" id="chat-container">
+          <div className="mx-auto max-w-3xl space-y-6">
+            {messages.length === 0 ? (
+              <div className="flex h-[50vh] flex-col items-center justify-center text-center text-muted-foreground">
+                <motion.div
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-tr from-indigo-500/10 to-purple-500/10 ring-1 ring-indigo-500/20">
+                    <Brain className="h-12 w-12 text-indigo-400" />
+                  </div>
+                  <h3 className="mb-2 text-xl font-medium text-foreground">Ready to begin?</h3>
+                  <p className="text-sm opacity-80">
+                    Your AI interviewer is preparing the first question.
+                  </p>
+                </motion.div>
               </div>
-            </div>
-          ) : (
-            messages.map((message, index) => (
-              <div
-                key={index}
-                className={`chat-message ${
-                  message.role === 'user' ? 'user' : message.role === 'ai' ? 'ai' : 'system'
-                }`}
-              >
-                <p>{message.content}</p>
-                <span className="mt-1 block text-xs opacity-50">
-                  {message.timestamp.toLocaleTimeString()}
-                </span>
-              </div>
-            ))
-          )}
+            ) : (
+              <AnimatePresence initial={false}>
+                {messages.map((message, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div
+                      className={`relative max-w-[85%] rounded-2xl px-6 py-4 shadow-sm md:max-w-[75%] ${
+                        message.role === 'user'
+                          ? 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white'
+                          : message.role === 'system'
+                            ? 'w-full bg-muted/50 text-center text-sm text-muted-foreground shadow-none'
+                            : 'bg-white/5 bg-gradient-to-br from-white/5 to-white/[0.02] text-foreground ring-1 ring-white/10'
+                      }`}
+                    >
+                      {message.role !== 'system' && (
+                        <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                      )}
+                      {message.role === 'system' && <p>{message.content}</p>}
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            )}
 
-          {isProcessing && !isEnding && (
-            <div className="chat-message ai">
-              <div className="flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Thinking...</span>
-              </div>
-            </div>
-          )}
+            {isProcessing && !isEnding && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center gap-2"
+              >
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-500/10">
+                  <Sparkles className="h-4 w-4 text-indigo-400" />
+                </div>
+                <div className="flex gap-1">
+                  <span
+                    className="h-2 w-2 animate-bounce rounded-full bg-indigo-400/50"
+                    style={{ animationDelay: '0s' }}
+                  ></span>
+                  <span
+                    className="h-2 w-2 animate-bounce rounded-full bg-indigo-400/50"
+                    style={{ animationDelay: '0.2s' }}
+                  ></span>
+                  <span
+                    className="h-2 w-2 animate-bounce rounded-full bg-indigo-400/50"
+                    style={{ animationDelay: '0.4s' }}
+                  ></span>
+                </div>
+              </motion.div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
         </div>
 
-        {/* Sidebar - AI Visualizer */}
-        <div className="hidden w-64 border-l p-4 lg:block">
-          <Card className="flex h-full flex-col items-center justify-center p-6">
-            <div className="audio-visualizer mb-6">
-              {[...Array(8)].map((_, i) => (
-                <div
-                  key={i}
-                  className={`audio-bar ${isSpeaking ? 'active' : ''}`}
-                  style={{
-                    animationDelay: `${i * 0.1}s`,
-                    height: isSpeaking ? `${20 + Math.random() * 80}%` : '20%',
-                  }}
-                />
-              ))}
+        {/* Sidebar - AI Visualizer (Desktop) */}
+        <div className="hidden w-80 border-l border-white/10 bg-background/40 backdrop-blur-sm lg:block">
+          <div className="flex h-full flex-col p-6">
+            <h3 className="mb-6 flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+              <Volume2 className="h-4 w-4" />
+              Audio Visualizer
+            </h3>
+
+            <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-white/5 bg-white/5 p-8 shadow-inner">
+              <div className="flex h-32 items-center gap-1.5">
+                {[...Array(12)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    className={`w-1.5 rounded-full ${isSpeaking ? 'bg-indigo-400' : 'bg-indigo-400/20'}`}
+                    animate={
+                      isSpeaking
+                        ? {
+                            height: [16, Math.max(16, Math.random() * 96), 16],
+                          }
+                        : {
+                            height: 16,
+                          }
+                    }
+                    transition={{
+                      duration: 0.4,
+                      repeat: isSpeaking ? Infinity : 0,
+                      repeatType: 'reverse',
+                      delay: i * 0.05,
+                    }}
+                  />
+                ))}
+              </div>
+
+              <div className="mt-8 text-center">
+                <p
+                  className={`text-sm font-medium transition-colors ${isSpeaking ? 'text-indigo-400' : 'text-muted-foreground'}`}
+                >
+                  {isSpeaking
+                    ? 'AI is speaking...'
+                    : isProcessing
+                      ? 'Processing response...'
+                      : 'Waiting for input'}
+                </p>
+                {isSpeaking && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-4 h-8 border-indigo-500/20 bg-indigo-500/10 text-xs text-indigo-400 hover:bg-indigo-500/20 hover:text-indigo-300"
+                    onClick={toggleSpeech}
+                  >
+                    <VolumeX className="mr-2 h-3 w-3" />
+                    Mute Audio
+                  </Button>
+                )}
+              </div>
             </div>
-            <p className="text-center text-sm text-muted-foreground">
-              {isSpeaking ? 'AI is speaking...' : 'Waiting for response'}
-            </p>
-            {isSpeaking && (
-              <Button variant="outline" size="sm" className="mt-4" onClick={toggleSpeech}>
-                <VolumeX className="mr-2 h-4 w-4" />
-                Stop
-              </Button>
-            )}
-          </Card>
+
+            <div className="mt-auto space-y-4">
+              <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                <p className="mb-2 text-xs font-medium text-muted-foreground">Speaking Tips</p>
+                <ul className="space-y-2 text-xs text-muted-foreground/80">
+                  <li>• Speak clearly and at a moderate pace</li>
+                  <li>• Use the mic button to toggle input</li>
+                  <li>• Press Enter to send text messages</li>
+                </ul>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Input Area */}
-      <div className="border-t p-4">
-        <div className="mx-auto max-w-4xl">
+      <div className="border-t border-white/10 bg-background/60 p-4 backdrop-blur-xl sm:p-6">
+        <div className="mx-auto max-w-3xl">
           {/* Voice Indicator */}
-          {speechState.isListening && (
-            <div className="voice-indicator listening mx-auto mb-4 w-fit">
-              <div className="voice-dot listening" />
-              <span>Listening...</span>
+          <AnimatePresence>
+            {speechState.isListening && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                className="mb-4 flex items-center justify-center gap-2"
+              >
+                <span className="relative flex h-3 w-3">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
+                  <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500"></span>
+                </span>
+                <span className="text-sm font-medium text-red-400">Listening...</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Input Controls */}
+          <div className="relative flex gap-3">
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button
+                size="icon"
+                variant={speechState.isListening ? 'destructive' : 'outline'}
+                className={`h-[52px] w-[52px] rounded-2xl border-white/10 shadow-lg transition-all ${
+                  speechState.isListening
+                    ? 'bg-red-500 hover:bg-red-600'
+                    : 'bg-white/5 hover:bg-white/10'
+                }`}
+                onClick={handleVoiceInput}
+                disabled={!speechState.isSupported}
+              >
+                {speechState.isListening ? (
+                  <Mic className="h-6 w-6 animate-pulse" />
+                ) : (
+                  <Mic className="h-6 w-6" />
+                )}
+              </Button>
+            </motion.div>
+
+            <div className="relative flex-1">
+              <Textarea
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                placeholder="Type your answer or speak..."
+                className="min-h-[52px] w-full resize-none rounded-2xl border-white/10 bg-white/5 py-[14px] pl-4 pr-14 text-base shadow-inner focus:border-indigo-500/50 focus:bg-white/10 focus:ring-1 focus:ring-indigo-500/50"
+                rows={1}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage();
+                  }
+                }}
+                disabled={isProcessing}
+              />
+              <Button
+                size="icon"
+                onClick={handleSendMessage}
+                disabled={!input.trim() || isProcessing}
+                className="absolute bottom-1.5 right-1.5 h-10 w-10 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-600/50"
+              >
+                <Send className="h-4 w-4" />
+              </Button>
             </div>
-          )}
-
-          {/* Input */}
-          <div className="flex gap-4">
-            <Button
-              size="icon"
-              variant={speechState.isListening ? 'destructive' : 'outline'}
-              className="shrink-0"
-              onClick={handleVoiceInput}
-              disabled={!speechState.isSupported}
-            >
-              <Mic className="h-5 w-5" />
-            </Button>
-
-            <Textarea
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              placeholder="Type your answer or speak..."
-              className="max-h-[120px] min-h-[60px]"
-              onKeyDown={e => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSendMessage();
-                }
-              }}
-              disabled={isProcessing}
-            />
-
-            <Button
-              size="icon"
-              onClick={handleSendMessage}
-              disabled={!input.trim() || isProcessing}
-              className="shrink-0"
-            >
-              <Send className="h-5 w-5" />
-            </Button>
           </div>
-
-          <p className="mt-2 text-center text-xs text-muted-foreground">
-            Press Enter to send, Shift+Enter for new line
+          <p className="mt-3 hidden text-center text-xs text-muted-foreground/60 sm:block">
+            Press <kbd className="rounded bg-white/10 px-1 py-0.5 font-sans">Enter</kbd> to send,{' '}
+            <kbd className="rounded bg-white/10 px-1 py-0.5 font-sans">Shift + Enter</kbd> for new
+            line
           </p>
         </div>
       </div>
