@@ -13,10 +13,7 @@ export default async function HistoryPage() {
   const sessions = result.data || [];
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* Background Gradient */}
-      <div className="fixed inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/20 via-background to-background" />
-
+    <div className="container mx-auto px-4 py-8">
       <HistoryClient initialSessions={sessions} />
     </div>
   );
