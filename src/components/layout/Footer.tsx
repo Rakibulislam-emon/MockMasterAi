@@ -103,7 +103,7 @@ export function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="mt-16 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-8 text-sm text-muted-foreground md:flex-row">
+        {/* <div className="mt-16 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-8 text-sm text-muted-foreground md:flex-row">
           <p>© {new Date().getFullYear()} InterPrep AI. All rights reserved.</p>
           <div className="flex gap-8">
             <span className="flex items-center gap-2">
@@ -111,7 +111,7 @@ export function Footer() {
               All Systems Operational
             </span>
           </div>
-        </div>
+        </div> */}
       </div>
     </footer>
   );
