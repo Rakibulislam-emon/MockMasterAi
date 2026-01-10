@@ -48,9 +48,23 @@ export async function uploadResume(file: {
       return { success: false, error: 'File size must be less than 5MB' };
     }
 
-    // In production, upload to cloud storage and extract text
-    // For now, we'll simulate with the provided content
-    const extractedText = file.content;
+    // Parse PDF content
+    let extractedText = '';
+
+    if (file.type === 'application/pdf') {
+      try {
+        const pdf = require('pdf-parse');
+        const buffer = Buffer.from(file.content, 'base64');
+        const data = await pdf(buffer);
+        extractedText = data.text;
+      } catch (parseError) {
+        console.error('Error parsing PDF:', parseError);
+        return { success: false, error: 'Failed to parse PDF file' };
+      }
+    } else {
+      // Fallback for text files if supported later
+      extractedText = Buffer.from(file.content, 'base64').toString('utf-8');
+    }
 
     // Create resume record
     const resume = await Resume.createResume({
@@ -130,8 +144,11 @@ export async function getUserResumes(): Promise<
         ? {
             overallScore: r.analysis.overallScore,
             atsScore: r.analysis.atsScore,
+            sectionScores: r.analysis.sectionScores,
+            improvementSuggestions: r.analysis.improvementSuggestions,
           }
         : null,
+      extractedText: r.extractedText?.slice(0, 500),
     }));
 
     return { success: true, data: formattedResumes };
@@ -283,7 +300,9 @@ async function analyzeResumeContent(resumeText: string): Promise<{
           {
             "section": "Section Name",
             "suggestion": "Specific advice",
-            "importance": "high|medium|low"
+            "importance": "high|medium|low",
+            "currentText": "Exact substring from resume that needs fixing (if applicable)",
+            "replacementText": "Suggested rewording (if applicable)"
           }
         ]
       }

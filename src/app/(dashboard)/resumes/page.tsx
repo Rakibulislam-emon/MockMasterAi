@@ -19,6 +19,7 @@ interface Resume {
   analyzedAt: Date | null;
   isDefault: boolean;
   analysis: any;
+  extractedText?: string;
 }
 
 export default function ResumesPage() {
@@ -73,8 +74,18 @@ export default function ResumesPage() {
     setUploadProgress(0);
 
     try {
-      const arrayBuffer = await selectedFile.arrayBuffer();
-      const content = new TextDecoder().decode(arrayBuffer);
+      // Convert file to base64
+      const base64Content = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          // Remove the data URL prefix (e.g., "data:application/pdf;base64,")
+          const base64 = result.split(',')[1];
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(selectedFile);
+      });
 
       const progressInterval = setInterval(() => {
         setUploadProgress(prev => Math.min(prev + 10, 90));
@@ -84,7 +95,7 @@ export default function ResumesPage() {
         name: selectedFile.name,
         size: selectedFile.size,
         type: selectedFile.type,
-        content: content.substring(0, 10000),
+        content: base64Content,
       });
 
       clearInterval(progressInterval);
@@ -225,71 +236,99 @@ export default function ResumesPage() {
 
       <div className="space-y-6">
         <h2 className="text-2xl font-semibold">Your Resumes</h2>
-        {resumes.map(resume => (
-          <Card
-            key={resume.id}
-            className={cn(
-              'overflow-hidden transition-all',
-              expandedResumeId === resume.id ? 'ring-2 ring-primary' : ''
-            )}
-          >
-            <div
-              className="flex cursor-pointer items-center justify-between border-b bg-card/50 p-4 transition-colors hover:bg-muted/50"
-              onClick={() => setExpandedResumeId(expandedResumeId === resume.id ? null : resume.id)}
+        {resumes.map((resume, index) => {
+          const previousResume = resumes[index + 1];
+          const currentScore = resume.analysis?.overallScore || 0;
+          const previousScore = previousResume?.analysis?.overallScore || 0;
+          const scoreDiff =
+            previousResume && currentScore && previousScore ? currentScore - previousScore : null;
+
+          return (
+            <Card
+              key={resume.id}
+              className={cn(
+                'overflow-hidden transition-all',
+                expandedResumeId === resume.id ? 'ring-2 ring-primary' : ''
+              )}
             >
-              <div className="flex items-center gap-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                  <FileText className="h-5 w-5 text-primary" />
+              <div
+                className="flex cursor-pointer items-center justify-between border-b bg-card/50 p-4 transition-colors hover:bg-muted/50"
+                onClick={() =>
+                  setExpandedResumeId(expandedResumeId === resume.id ? null : resume.id)
+                }
+              >
+                <div className="flex items-center gap-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                    <FileText className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-medium">{resume.fileName}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Uploaded {new Date(resume.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-medium">{resume.fileName}</p>
-                  <p className="text-sm text-muted-foreground">
-                    Uploaded {new Date(resume.createdAt).toLocaleDateString()}
-                  </p>
+
+                <div className="flex items-center gap-6">
+                  {resume.analysis && (
+                    <div className="hidden text-right sm:block">
+                      <div className="flex items-center justify-end gap-2">
+                        <span className="text-sm font-medium text-primary">
+                          {resume.analysis.overallScore}/100
+                        </span>
+                        {scoreDiff !== null && scoreDiff !== 0 && (
+                          <span
+                            className={cn(
+                              'rounded px-1.5 py-0.5 text-xs font-medium',
+                              scoreDiff > 0
+                                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                            )}
+                          >
+                            {scoreDiff > 0 ? '+' : ''}
+                            {scoreDiff}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">Score</p>
+                    </div>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={e => {
+                      e.stopPropagation();
+                      handleDelete(resume.id);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4 text-muted-foreground hover:text-red-500" />
+                  </Button>
+                  {expandedResumeId === resume.id ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
                 </div>
               </div>
 
-              <div className="flex items-center gap-6">
-                {resume.analysis && (
-                  <div className="hidden text-right sm:block">
-                    <span className="text-sm font-medium text-primary">
-                      {resume.analysis.overallScore}/100
-                    </span>
-                    <p className="text-xs text-muted-foreground">Score</p>
-                  </div>
-                )}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={e => {
-                    e.stopPropagation();
-                    handleDelete(resume.id);
-                  }}
-                >
-                  <Trash2 className="h-4 w-4 text-muted-foreground hover:text-red-500" />
-                </Button>
-                {expandedResumeId === resume.id ? (
-                  <ChevronUp className="h-4 w-4" />
-                ) : (
-                  <ChevronDown className="h-4 w-4" />
-                )}
-              </div>
-            </div>
-
-            {/* Expanded Content */}
-            {expandedResumeId === resume.id && (
-              <div className="p-6">
-                {resume.analysis ? (
-                  <ResumeScoreDashboard analysis={resume.analysis} />
-                ) : (
-                  <div className="py-8 text-center text-muted-foreground">
-                    Analysis in progress...
-                  </div>
-                )}
-              </div>
-            )}
-          </Card>
-        ))}
+              {/* Expanded Content */}
+              {expandedResumeId === resume.id && (
+                <div className="p-6">
+                  {resume.analysis ? (
+                    <ResumeScoreDashboard
+                      analysis={resume.analysis}
+                      extractedText={resume.extractedText}
+                    />
+                  ) : (
+                    <div className="py-8 text-center text-muted-foreground">
+                      Analysis in progress...
+                    </div>
+                  )}
+                </div>
+              )}
+            </Card>
+          );
+        })}
       </div>
     </div>
   );

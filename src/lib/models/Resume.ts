@@ -20,6 +20,8 @@ export interface IImprovementSuggestion {
   section: string;
   suggestion: string;
   importance: 'high' | 'medium' | 'low';
+  currentText?: string;
+  replacementText?: string;
 }
 
 // Resume document interface
@@ -95,6 +97,8 @@ const ImprovementSuggestionSchema = new Schema<IImprovementSuggestion>(
       type: String,
       enum: ['high', 'medium', 'low'],
     },
+    currentText: String,
+    replacementText: String,
   },
   { _id: false }
 );

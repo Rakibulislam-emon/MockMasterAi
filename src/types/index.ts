@@ -130,6 +130,8 @@ export interface ImprovementSuggestion {
   section: string;
   suggestion: string;
   importance: 'high' | 'medium' | 'low';
+  currentText?: string;
+  replacementText?: string;
 }
 
 // Question types
