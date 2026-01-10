@@ -116,6 +116,12 @@ export interface EducationItem {
 export interface ResumeAnalysis {
   overallScore: number | null;
   atsScore: number | null;
+  sectionScores?: {
+    impact: number;
+    brevity: number;
+    style: number;
+    skills: number;
+  } | null;
   missingKeywords: string[];
   improvementSuggestions: ImprovementSuggestion[];
 }

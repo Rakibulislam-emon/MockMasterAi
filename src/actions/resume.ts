@@ -241,6 +241,12 @@ export async function getResumeDetails(resumeId: string): Promise<
 async function analyzeResumeContent(resumeText: string): Promise<{
   overallScore: number;
   atsScore: number;
+  sectionScores: {
+    impact: number;
+    brevity: number;
+    style: number;
+    skills: number;
+  };
   missingKeywords: string[];
   improvementSuggestions: IImprovementSuggestion[];
 }> {
@@ -259,18 +265,24 @@ async function analyzeResumeContent(resumeText: string): Promise<{
       - Deduct 10 points if no quantifiable metrics (numbers, %, $) are found in experience.
       - Deduct 10 points if "Summary" or "Objective" section is missing or weak.
       - Deduct 5 points per vague buzzword (e.g., "hard worker", "team player").
-      - Deduct 10 points if experience bullet points are task-based (e.g., "Responsible for...") instead of result-based (e.g., "Increased sales by...").
-      - Deduct 10 points for formatting issues or typos (if detectable).
+      - Deduct 10 points if experience bullet points are task-based instead of result-based.
+      - Deduct 10 points for formatting issues or typos.
       
       Output strictly in this JSON format (no markdown):
       {
         "overallScore": number (0-100 derived from rubric),
-        "atsScore": number (estimated 0-100 based on keyword density and structure),
-        "missingKeywords": ["list", "of", "missing", "important", "industry", "keywords"],
+        "atsScore": number (estimated 0-100 based on keyword density),
+        "sectionScores": {
+          "impact": number (0-100, based on metrics and results),
+          "brevity": number (0-100, based on concise phrasing),
+          "style": number (0-100, based on active verbs and tone),
+          "skills": number (0-100, based on relevant hard/soft skills)
+        },
+        "missingKeywords": ["list", "of", "missing", "keywords"],
         "improvementSuggestions": [
           {
             "section": "Section Name",
-            "suggestion": "Specific, actionable advice (e.g., 'Change X to Y')",
+            "suggestion": "Specific advice",
             "importance": "high|medium|low"
           }
         ]
@@ -303,6 +315,12 @@ async function analyzeResumeContent(resumeText: string): Promise<{
     return {
       overallScore: 70,
       atsScore: 65,
+      sectionScores: {
+        impact: 70,
+        brevity: 80,
+        style: 75,
+        skills: 60,
+      },
       missingKeywords: ['achievements', 'metrics', 'leadership'],
       improvementSuggestions: [
         {

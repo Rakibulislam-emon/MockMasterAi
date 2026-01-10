@@ -40,6 +40,12 @@ export interface IResume extends Document {
   analysis: {
     overallScore: number | null;
     atsScore: number | null;
+    sectionScores: {
+      impact: number;
+      brevity: number;
+      style: number;
+      skills: number;
+    } | null;
     missingKeywords: string[];
     improvementSuggestions: IImprovementSuggestion[];
   } | null;
@@ -117,6 +123,12 @@ const AnalysisSchema = new Schema(
       type: Number,
       min: 0,
       max: 100,
+    },
+    sectionScores: {
+      impact: { type: Number, min: 0, max: 100 },
+      brevity: { type: Number, min: 0, max: 100 },
+      style: { type: Number, min: 0, max: 100 },
+      skills: { type: Number, min: 0, max: 100 },
     },
     missingKeywords: [String],
     improvementSuggestions: [ImprovementSuggestionSchema],
