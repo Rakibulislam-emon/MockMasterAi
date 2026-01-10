@@ -247,20 +247,30 @@ async function analyzeResumeContent(resumeText: string): Promise<{
   try {
     // Use AI to analyze the resume
     const prompt = `
-      Analyze the following resume and provide structured feedback.
+      You are an expert Resume Evaluator and Career Coach. Analyze the following resume text strictly and objectively.
       
-      Resume:
-      ${resumeText.slice(0, 3000)}...
+      Resume Text:
+      ${resumeText.slice(0, 4000)}...
       
-      Provide analysis in JSON format:
+      Your task is to provide a structured analysis with deterministic scoring rules.
+      
+      Scoring Rubric (Strict Deduction):
+      - Start with 100 points.
+      - Deduct 10 points if no quantifiable metrics (numbers, %, $) are found in experience.
+      - Deduct 10 points if "Summary" or "Objective" section is missing or weak.
+      - Deduct 5 points per vague buzzword (e.g., "hard worker", "team player").
+      - Deduct 10 points if experience bullet points are task-based (e.g., "Responsible for...") instead of result-based (e.g., "Increased sales by...").
+      - Deduct 10 points for formatting issues or typos (if detectable).
+      
+      Output strictly in this JSON format (no markdown):
       {
-        "overallScore": number (0-100),
-        "atsScore": number (0-100),
-        "missingKeywords": ["list of missing keywords"],
+        "overallScore": number (0-100 derived from rubric),
+        "atsScore": number (estimated 0-100 based on keyword density and structure),
+        "missingKeywords": ["list", "of", "missing", "important", "industry", "keywords"],
         "improvementSuggestions": [
           {
-            "section": "section name",
-            "suggestion": "specific suggestion",
+            "section": "Section Name",
+            "suggestion": "Specific, actionable advice (e.g., 'Change X to Y')",
             "importance": "high|medium|low"
           }
         ]
@@ -268,8 +278,9 @@ async function analyzeResumeContent(resumeText: string): Promise<{
     `;
 
     const result = await groqService.generateContent(prompt, {
-      preferFast: true,
-      maxTokens: 512,
+      preferFast: false, // Use better model for analysis
+      maxTokens: 1024,
+      temperature: 0, // Ensure deterministic results
     });
 
     // Parse the response - handle various formats
