@@ -20,6 +20,8 @@ export interface IImprovementSuggestion {
   section: string;
   suggestion: string;
   importance: 'high' | 'medium' | 'low';
+  currentText?: string;
+  replacementText?: string;
 }
 
 // Resume document interface
@@ -40,6 +42,12 @@ export interface IResume extends Document {
   analysis: {
     overallScore: number | null;
     atsScore: number | null;
+    sectionScores: {
+      impact: number;
+      brevity: number;
+      style: number;
+      skills: number;
+    } | null;
     missingKeywords: string[];
     improvementSuggestions: IImprovementSuggestion[];
   } | null;
@@ -89,6 +97,8 @@ const ImprovementSuggestionSchema = new Schema<IImprovementSuggestion>(
       type: String,
       enum: ['high', 'medium', 'low'],
     },
+    currentText: String,
+    replacementText: String,
   },
   { _id: false }
 );
@@ -117,6 +127,12 @@ const AnalysisSchema = new Schema(
       type: Number,
       min: 0,
       max: 100,
+    },
+    sectionScores: {
+      impact: { type: Number, min: 0, max: 100 },
+      brevity: { type: Number, min: 0, max: 100 },
+      style: { type: Number, min: 0, max: 100 },
+      skills: { type: Number, min: 0, max: 100 },
     },
     missingKeywords: [String],
     improvementSuggestions: [ImprovementSuggestionSchema],

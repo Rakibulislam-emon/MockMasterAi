@@ -69,7 +69,7 @@ const config: Config = {
           '0%': { transform: 'scale(0.8)', opacity: '1' },
           '100%': { transform: 'scale(2)', opacity: '0' },
         },
-        'listening': {
+        listening: {
           '0%, 100%': { transform: 'scale(1)' },
           '50%': { transform: 'scale(1.1)' },
         },
@@ -78,7 +78,7 @@ const config: Config = {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
         'pulse-ring': 'pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite',
-        'listening': 'listening 1s ease-in-out infinite',
+        listening: 'listening 1s ease-in-out infinite',
       },
     },
   },
