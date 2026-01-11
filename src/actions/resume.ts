@@ -48,9 +48,23 @@ export async function uploadResume(file: {
       return { success: false, error: 'File size must be less than 5MB' };
     }
 
-    // In production, upload to cloud storage and extract text
-    // For now, we'll simulate with the provided content
-    const extractedText = file.content;
+    // Parse PDF content
+    let extractedText = '';
+
+    if (file.type === 'application/pdf') {
+      try {
+        const pdf = require('pdf-parse');
+        const buffer = Buffer.from(file.content, 'base64');
+        const data = await pdf(buffer);
+        extractedText = data.text;
+      } catch (parseError) {
+        console.error('Error parsing PDF:', parseError);
+        return { success: false, error: 'Failed to parse PDF file' };
+      }
+    } else {
+      // Fallback for text files if supported later
+      extractedText = Buffer.from(file.content, 'base64').toString('utf-8');
+    }
 
     // Create resume record
     const resume = await Resume.createResume({
@@ -130,8 +144,11 @@ export async function getUserResumes(): Promise<
         ? {
             overallScore: r.analysis.overallScore,
             atsScore: r.analysis.atsScore,
+            sectionScores: r.analysis.sectionScores,
+            improvementSuggestions: r.analysis.improvementSuggestions,
           }
         : null,
+      extractedText: r.extractedText?.slice(0, 500),
     }));
 
     return { success: true, data: formattedResumes };
@@ -241,35 +258,60 @@ export async function getResumeDetails(resumeId: string): Promise<
 async function analyzeResumeContent(resumeText: string): Promise<{
   overallScore: number;
   atsScore: number;
+  sectionScores: {
+    impact: number;
+    brevity: number;
+    style: number;
+    skills: number;
+  };
   missingKeywords: string[];
   improvementSuggestions: IImprovementSuggestion[];
 }> {
   try {
     // Use AI to analyze the resume
     const prompt = `
-      Analyze the following resume and provide structured feedback.
+      You are an expert Resume Evaluator and Career Coach. Analyze the following resume text strictly and objectively.
       
-      Resume:
-      ${resumeText.slice(0, 3000)}...
+      Resume Text:
+      ${resumeText.slice(0, 4000)}...
       
-      Provide analysis in JSON format:
+      Your task is to provide a structured analysis with deterministic scoring rules.
+      
+      Scoring Rubric (Strict Deduction):
+      - Start with 100 points.
+      - Deduct 10 points if no quantifiable metrics (numbers, %, $) are found in experience.
+      - Deduct 10 points if "Summary" or "Objective" section is missing or weak.
+      - Deduct 5 points per vague buzzword (e.g., "hard worker", "team player").
+      - Deduct 10 points if experience bullet points are task-based instead of result-based.
+      - Deduct 10 points for formatting issues or typos.
+      
+      Output strictly in this JSON format (no markdown):
       {
-        "overallScore": number (0-100),
-        "atsScore": number (0-100),
-        "missingKeywords": ["list of missing keywords"],
+        "overallScore": number (0-100 derived from rubric),
+        "atsScore": number (estimated 0-100 based on keyword density),
+        "sectionScores": {
+          "impact": number (0-100, based on metrics and results),
+          "brevity": number (0-100, based on concise phrasing),
+          "style": number (0-100, based on active verbs and tone),
+          "skills": number (0-100, based on relevant hard/soft skills)
+        },
+        "missingKeywords": ["list", "of", "missing", "keywords"],
         "improvementSuggestions": [
           {
-            "section": "section name",
-            "suggestion": "specific suggestion",
-            "importance": "high|medium|low"
+            "section": "Section Name",
+            "suggestion": "Specific advice",
+            "importance": "high|medium|low",
+            "currentText": "Exact substring from resume that needs fixing (if applicable)",
+            "replacementText": "Suggested rewording (if applicable)"
           }
         ]
       }
     `;
 
     const result = await groqService.generateContent(prompt, {
-      preferFast: true,
-      maxTokens: 512,
+      preferFast: false, // Use better model for analysis
+      maxTokens: 1024,
+      temperature: 0, // Ensure deterministic results
     });
 
     // Parse the response - handle various formats
@@ -292,6 +334,12 @@ async function analyzeResumeContent(resumeText: string): Promise<{
     return {
       overallScore: 70,
       atsScore: 65,
+      sectionScores: {
+        impact: 70,
+        brevity: 80,
+        style: 75,
+        skills: 60,
+      },
       missingKeywords: ['achievements', 'metrics', 'leadership'],
       improvementSuggestions: [
         {
