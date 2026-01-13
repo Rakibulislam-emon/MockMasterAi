@@ -92,17 +92,37 @@ export default function InterviewRoomPage({ params }: { params: Promise<{ sessio
     },
     onError: error => {
       // Handle transient errors gracefully
-      if (
-        error.includes('Network') ||
-        error.includes('no-speech') ||
-        error.includes('not-allowed')
-      ) {
+      if (error.includes('not-allowed') || error.includes('permission')) {
         toast({
-          title: error.includes('Network') ? 'Connection Issue' : 'Voice Input Unavailable',
-          description: error.includes('Network')
-            ? 'Speech services unreachable. Please type your answer.'
-            : 'Please check microphone permissions or type your answer.',
-          variant: 'default',
+          title: 'Microphone Access Denied',
+          description:
+            'Please allow microphone access in your browser settings to use voice features.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      if (error.includes('Network')) {
+        toast({
+          title: 'Connection Issue',
+          description:
+            'Browser speech services are unreachable. Please check your internet or try using Chrome/Edge.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      if (error.includes('no-speech')) {
+        // Ignore no-speech errors as they are common when silence is detected
+        return;
+      }
+
+      if (error.includes('not-supported')) {
+        toast({
+          title: 'Browser Not Supported',
+          description:
+            'Voice input is not supported in this browser. Please try Google Chrome or Microsoft Edge.',
+          variant: 'destructive',
         });
         return;
       }
