@@ -144,8 +144,21 @@ export async function getUserResumes(): Promise<
         ? {
             overallScore: r.analysis.overallScore,
             atsScore: r.analysis.atsScore,
-            sectionScores: r.analysis.sectionScores,
-            improvementSuggestions: r.analysis.improvementSuggestions,
+            sectionScores: {
+              impact: r.analysis.sectionScores?.impact ?? 0,
+              brevity: r.analysis.sectionScores?.brevity ?? 0,
+              style: r.analysis.sectionScores?.style ?? 0,
+              skills: r.analysis.sectionScores?.skills ?? 0,
+            },
+            improvementSuggestions: Array.isArray(r.analysis.improvementSuggestions)
+              ? r.analysis.improvementSuggestions.map((s: any) => ({
+                  section: s.section,
+                  suggestion: s.suggestion,
+                  importance: s.importance,
+                  currentText: s.currentText,
+                  replacementText: s.replacementText,
+                }))
+              : [],
           }
         : null,
       extractedText: r.extractedText?.slice(0, 500),
