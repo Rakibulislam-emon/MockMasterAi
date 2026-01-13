@@ -1,8 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Mic, Sparkles, Github, Twitter, Linkedin } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Mic, Github, Twitter, Linkedin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const footerLinks = {
@@ -48,7 +47,16 @@ export function Footer() {
         <div className="grid gap-12 lg:grid-cols-6 lg:gap-8">
           {/* Brand Column */}
           <div className="lg:col-span-2">
-           
+            <Link href="/" className="group mb-6 flex items-center gap-2">
+              <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/20 transition-all duration-300 group-hover:scale-105 group-hover:shadow-indigo-500/40">
+                <Mic className="h-5 w-5 text-white" />
+                <div className="absolute inset-0 rounded-xl bg-white/20 opacity-0 transition-opacity group-hover:opacity-100" />
+              </div>
+              <span className="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-xl font-bold text-transparent transition-all duration-300 group-hover:from-indigo-300 group-hover:to-purple-300">
+                InterPrep AI
+              </span>
+            </Link>
+
             <p className="mb-6 max-w-sm text-muted-foreground">
               Master your interview skills with the most advanced AI-powered practice platform. Get
               hired faster and with more confidence.
@@ -95,7 +103,17 @@ export function Footer() {
         </div>
 
         {/* Bottom Bar */}
-     
+        <div className="mt-16 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-8 md:flex-row">
+          <p className="text-sm text-muted-foreground">
+            © {new Date().getFullYear()} InterPrep AI. All rights reserved.
+          </p>
+          <div className="flex gap-8">
+            <span className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-green-500" />
+              All Systems Operational
+            </span>
+          </div>
+        </div>
       </div>
     </footer>
   );

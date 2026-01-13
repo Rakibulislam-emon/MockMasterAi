@@ -1,22 +1,22 @@
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { Hero } from '@/components/home/Hero';
-import { Features } from '@/components/home/Features';
-import { Stats } from '@/components/home/Stats';
-import { HowItWorks } from '@/components/home/HowItWorks';
-import { CTA } from '@/components/home/CTA';
+import { LogoMarquee } from '@/components/home/LogoMarquee';
+import { BentoGridFeatures } from '@/components/home/BentoGridFeatures';
+import { InteractiveFlow } from '@/components/home/InteractiveFlow';
+import { PremiumCTA } from '@/components/home/PremiumCTA';
 
 export default async function HomePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted">
+    <div className="min-h-screen bg-background text-foreground selection:bg-primary/20">
       <Navbar variant="landing" />
 
-      <main>
+      <main className="overflow-hidden">
         <Hero />
-        <Stats />
-        <Features />
-        <HowItWorks />
-        <CTA />
+        <LogoMarquee />
+        <BentoGridFeatures />
+        <InteractiveFlow />
+        <PremiumCTA />
       </main>
 
       <Footer />
